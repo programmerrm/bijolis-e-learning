@@ -6,18 +6,19 @@ from accounts.services.user_id import GENERATE_USER_ID
 
 User = get_user_model()
 
-# === PRE SAVE: Generate user_id and slug ===
+# === PRE SAVE: Generate user_id and slug ===        
 @receiver(pre_save, sender=User)
 def populate_user_fields(sender, instance, **kwargs):
-    # Auto-generate user_id if not present
+    # Avoid signal firing if the model is not fully loaded (early stage during migration or creation)
+    if not hasattr(instance, 'user_id'):
+        return
+
     if not instance.user_id:
         instance.user_id = GENERATE_USER_ID(instance.role)
-    
-    # Auto-generate or update slug if username changed
+
     if not instance.slug:
         instance.slug = GENERATE_SLUG(instance.username)
     elif instance.pk:
-        # Check if username has changed
         original = User.objects.filter(pk=instance.pk).only("username").first()
         if original and instance.username != original.username:
             instance.slug = GENERATE_SLUG(instance.username)

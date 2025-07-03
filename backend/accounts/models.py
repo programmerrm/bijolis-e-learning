@@ -1,18 +1,13 @@
 from django.db import models
-from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.core.validators import MinLengthValidator, RegexValidator
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.utils.translation import get_language as _
+from django.utils.translation import gettext_lazy as _
 from accounts.managers import UserManager
 from accounts.utils.image_upload import USER_DIRECTORY_PATH
 from accounts.utils.gender import GENDERS
 from accounts.utils.role import ROLES
 from accounts.utils.account_type import ACCOUNT_TYPES
-from accounts.services.user_id import GENERATE_USER_ID
-from core.utils import VALIDATE_EMAIL, VALIDATE_PHONE_NUMBER, VALIDATE_IMAGE_SIZE, VALIDATE_IMAGE_EXTENSION, GENERATE_SLUG
-
-User = get_user_model()
+from core.utils import VALIDATE_EMAIL, VALIDATE_PHONE_NUMBER, VALIDATE_IMAGE_SIZE, VALIDATE_IMAGE_EXTENSION
 
 # Create your models here.
 
@@ -22,8 +17,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         validators=[VALIDATE_IMAGE_EXTENSION, VALIDATE_IMAGE_SIZE],
         verbose_name=_('Image'),
         help_text=_('Upload your image...'),
+        null=True,
+        blank=True,
     )
-    user_id = models.PositiveIntegerField(
+    user_id = models.CharField(
         unique=True,
         db_index=True,
         max_length=9,
@@ -68,6 +65,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         unique=True,
         db_index=True,
         max_length=20,
+        null=True,
+        blank=True,
         validators=[VALIDATE_PHONE_NUMBER, MinLengthValidator(5)],
         verbose_name=_('Number'),
         help_text=_('Enter your number...'),
@@ -75,34 +74,38 @@ class User(AbstractBaseUser, PermissionsMixin):
     gender = models.CharField(
         max_length=20,
         choices=GENDERS,
+        null=True,
+        blank=True,
         verbose_name=_('Gender'),
         help_text=_('Enter your gender...'),
     )
     birth_date = models.DateField(
+        null=True,
+        blank=True,
         verbose_name=_('Birth Date'),
         help_text=_('Enter your birth date...'),
     )
     country = models.CharField(
         max_length=25,
         validators=[MinLengthValidator(3)],
+        null=True,
+        blank=True,
         verbose_name=_('Country'),
         help_text=_('Enter your country')
     )
     signature = models.CharField(
         max_length=40,
         validators=[MinLengthValidator(3)],
+        null=True,
+        blank=True,
         verbose_name=_('Signature'),
         help_text=_('Enter your signature...'),
     )
-    account_type = models.CharField(
-        max_length=20,
-        choices=ACCOUNT_TYPES,
-        verbose_name=_('Account Type'),
-        help_text=_('Enter your account type...'),
-    )
     role = models.CharField(
-        default=20,
+        max_length=20,
         choices=ROLES,
+        null=True,
+        blank=True,
         verbose_name=_('Role'),
         help_text=_('Enter your role...'),
     )
@@ -112,9 +115,25 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_block = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
+    is_superuser = models.BooleanField(default=False, verbose_name=_('Is Admin'),)
+
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='accounts_user_set',
+        blank=True,
+        help_text=_('The groups this user belongs to. A user will get all permissions granted to each of their groups.'),
+        verbose_name=_('groups'),
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='accounts_user_set',
+        blank=True,
+        help_text=_('Specific permissions for this user.'),
+        verbose_name=_('user permissions'),
+    )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = ['username', 'number', 'name']
 
     objects = UserManager()
 
@@ -125,33 +144,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.username or self.email
     
     def clean(self):
-        if self.role == 'admin':
-            existing_admin = User.objects.filter(role='admin')
-            if self.pk:
-                existing_admin = existing_admin.exclude(pk=self.pk)
-            if existing_admin.exists():
-                raise DjangoValidationError(_('Only one admin is allowed.'))
-            
-    def save(self, *args, **kwargs):
-        if not self.user_id:
-            self.user_id = GENERATE_USER_ID(self.role)
-        if self.pk:
-            orig = User.objects.only("username").filter(pk=self.pk).first()
-            if orig and orig.username != self.username:
-                self.slug = GENERATE_SLUG(self.username)
-        else:
-            self.slug = GENERATE_SLUG(self.username)
-
-        super().save(*args, **kwargs)
-            
-    def delete(self, using=None, keep_parents=False):
-        if self.image:
-            self.image.delete(save=False)
-        super().delete(using=using, keep_parents=keep_parents)
+        from accounts.validators.single_admin import VALIDATE_SINGLE_ADMIN
+        VALIDATE_SINGLE_ADMIN(self)
 
 class ActiveSession(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='active_session')
-    ip_address = models.GenericIPAddressField()
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='active_session'
+    )
+    ip_address = models.GenericIPAddressField(unique=True)
     user_agent = models.TextField()
     last_login = models.DateTimeField(auto_now=True)
 
