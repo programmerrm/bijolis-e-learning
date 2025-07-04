@@ -13,6 +13,6 @@ class REGISTER_RATE_LIMIT(UserRateThrottle):
     scope = 'register'
 
     def __init__(self):
-        self.rate = '1/min'
+        self.rate = '100/min'
         super().__init__()
         

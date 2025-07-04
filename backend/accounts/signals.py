@@ -17,11 +17,11 @@ def populate_user_fields(sender, instance, **kwargs):
         instance.user_id = GENERATE_USER_ID(instance.role)
 
     if not instance.slug:
-        instance.slug = GENERATE_SLUG(instance.username)
+        instance.slug = GENERATE_SLUG(instance.name)
     elif instance.pk:
-        original = User.objects.filter(pk=instance.pk).only("username").first()
-        if original and instance.username != original.username:
-            instance.slug = GENERATE_SLUG(instance.username)
+        original = User.objects.filter(pk=instance.pk).only("name").first()
+        if original and instance.name != original.name:
+            instance.slug = GENERATE_SLUG(instance.name)
 
 # === POST DELETE: Delete user image from storage ===
 @receiver(post_delete, sender=User)

@@ -6,7 +6,6 @@ from accounts.managers import UserManager
 from accounts.utils.image_upload import USER_DIRECTORY_PATH
 from accounts.utils.gender import GENDERS
 from accounts.utils.role import ROLES
-from accounts.utils.account_type import ACCOUNT_TYPES
 from core.utils import VALIDATE_EMAIL, VALIDATE_PHONE_NUMBER, VALIDATE_IMAGE_SIZE, VALIDATE_IMAGE_EXTENSION
 
 # Create your models here.
@@ -28,30 +27,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         editable=False,
         verbose_name=_('User ID'),
     )
-    username = models.CharField(
-        unique=True,
-        db_index=True,
-        max_length=40,
-        validators=[
-            MinLengthValidator(3),
-            RegexValidator(
-                regex=r'^[a-zA-Z0-9_]+$',
-                message=_('Username can only contain letters, numbers, and underscores.'),
-            ),
-        ],
-        verbose_name=_('Username'),
-        help_text=_('Enter your username...'),
-    )
-    slug = models.SlugField(
-        unique=True,
-        max_length=50,
-        editable=False,
-    )
     name = models.CharField(
         max_length=60,
         validators=[MinLengthValidator(3)],
         verbose_name=_('Name'),
         help_text=_('Enter your name...'),
+    )
+    slug = models.SlugField(
+        unique=True,
+        max_length=50,
+        editable=False,
     )
     email = models.EmailField(
         unique=True,
@@ -79,7 +64,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name=_('Gender'),
         help_text=_('Enter your gender...'),
     )
-    birth_date = models.DateField(
+    date_of_birth = models.DateField(
         null=True,
         blank=True,
         verbose_name=_('Birth Date'),
@@ -133,7 +118,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'number', 'name']
+    REQUIRED_FIELDS = ['number', 'name']
 
     objects = UserManager()
 
@@ -141,7 +126,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ordering = ['-date_joined']
 
     def __str__(self):
-        return self.username or self.email
+        return self.name or self.email
     
     def clean(self):
         from accounts.validators.single_admin import VALIDATE_SINGLE_ADMIN

@@ -13,7 +13,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'name', 'email', 'number', 'password', 'confirm_password', 'gender', 'birth_date', 'country', 'signature', 'role', 'terms_accepted']
+        fields = ['name', 'email', 'number', 'password', 'confirm_password', 'gender', 'date_of_birth', 'country', 'signature', 'role', 'terms_accepted']
 
     def validate_terms_accepted(self, value):
         return VALIDATE_TERMS_ACCEPTED(value)
@@ -25,6 +25,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             })
         return attrs
     
+    def validate_role(self, value):
+        allowed_roles = ['admin', 'crypto', 'e-commerce']
+        if value not in allowed_roles:
+            raise serializers.ValidationError(
+                f"Invalid role provided. Must be one of {', '.join(allowed_roles)}."
+            )
+        return value
+
     def create(self, validated_data):
         validated_data.pop('confirm_password')
         password = validated_data.pop('password')

@@ -27,6 +27,7 @@ BASE_API = 'api/v1'
 urlpatterns = [
     path('admin/', admin.site.urls),
     path(f'{BASE_API}/accounts/', include('api.accounts.urls')),
+    path(f'{BASE_API}/configuration/', include('api.configuration.urls')),
     path(f'{BASE_API}/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path(f'{BASE_API}/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path(f'{BASE_API}/schema/', SpectacularAPIView.as_view(), name='schema'),
