@@ -1,5 +1,5 @@
 from django.contrib import admin
-from configuration.models import Logo, FooterLogo, OfficialInfo, Team, Services, WhyChooseUs, Banner
+from configuration.models import Logo, FooterLogo, OfficialInfo, Team, Services, WhyChooseUs, Banner, About
 
 class FooterLogoAdmin(admin.ModelAdmin):
     list_display = ['logo', 'description']
@@ -27,3 +27,4 @@ admin.site.register(Team, TeamAdmin)
 admin.site.register(Services, ServicesAdmin)
 admin.site.register(WhyChooseUs, WhyChooseUsAdmin)
 admin.site.register(Banner, BannerAdmin)
+admin.site.register(About)

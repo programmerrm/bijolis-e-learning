@@ -21,7 +21,7 @@ class LoginView(APIView):
                 token = GENERATE_JWT_TOKEN(user)
                 user_data = {
                     'id': user.id,
-                    'username': user.name,
+                    'name': user.name,
                     'email': user.email,
                     'image': user.image.url if user.image and hasattr(user.image, 'url') else None,
                 }
